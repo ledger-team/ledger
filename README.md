@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ledger
 
-## Getting Started
+Your school life, managed and interconnected.
 
-First, run the development server:
+Ledger is a Canvas-synced study app for high school students. It connects to a student's Canvas account, pulls their real assignments and grades, generates AI study guides for upcoming work, and gives each class a community feed where students can discuss assignments with their actual classmates.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Status
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In active development. Targeting soft launch at one school in mid-August 2026.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework:** Next.js 16 with TypeScript and the App Router
+- **Database:** PostgreSQL via Supabase
+- **ORM:** Prisma
+- **Auth:** Auth.js (NextAuth)
+- **AI:** Anthropic Claude Haiku
+- **Hosting:** Vercel
+- **Validation:** Zod
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+- **Canvas OAuth** for authentication. Students connect their own Canvas account; refresh tokens are stored AES-256-GCM encrypted.
+- **Schema** is Canvas-shaped: School, Course, Section, Enrollment, Assignment. Social and AI layers sit on top of the same data.
+- **AI study guides** are generated from real Canvas assignment data and capped at one free generation per user per day.
+- **Class feeds** are scoped to Canvas sections, so students see posts only from their actual classmates.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Security
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ledger handles minors' educational data. Security is a foundation layer.
 
-## Deploy on Vercel
+- All Canvas tokens AES-256-GCM encrypted at rest
+- Supabase Row Level Security enabled on all tables
+- All API input validated with Zod
+- Authentication and authorization checked on every protected route
+- Rate limiting enforced server-side on AI endpoints
+- HTTPS only, with strict security headers
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Roadmap
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Layer 0: Canvas OAuth and database schema
+- Layer 1: Canvas data sync (assignments, grades, courses)
+- Layer 2: AI study guide generation
+- Layer 3: Class community feeds
+- Layer 4: Ledger Plus (paid AI tier)
+- Layer 5: Nationwide AP communities
+
+## Founder
+
+Built by Sam Berry, a 16-year-old student at Dripping Springs High School in Texas.
