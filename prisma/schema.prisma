@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model School {
+  id         String   @id @default(cuid())
+  name       String
+  canvasUrl  String   @unique
+  createdAt  DateTime @default(now())
+
+  users    User[]
+  courses  Course[]
+}
+
+model User {
+  id                     String   @id @default(cuid())
+  email                  String   @unique
+  name                   String
+  schoolId               String
+  canvasUserId           String?
+  encryptedRefreshToken  String?
+  accessTokenExpiresAt   DateTime?
+  createdAt              DateTime @default(now())
+  lastSyncedAt           DateTime?
+
+  school       School        @relation(fields: [schoolId], references: [id])
+  enrollments  Enrollment[]
+  posts        Post[]
+  studyGuides  StudyGuide[]
+}
+
+model Course {
+  id             String   @id @default(cuid())
+  schoolId       String
+  canvasCourseId String
+  name           String
+  courseCode     String
+  currentGrade   String?
+  currentScore   Float?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime @default(now())
+
+  school      School       @relation(fields: [schoolId], references: [id])
+  sections    Section[]
+  assignments Assignment[]
+}
+
+model Section {
+  id              String   @id @default(cuid())
+  courseId        String
+  canvasSectionId String
+  name            String
+  createdAt       DateTime @default(now())
+
+  course      Course       @relation(fields: [courseId], references: [id])
+  enrollments Enrollment[]
+  posts       Post[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  sectionId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  section Section @relation(fields: [sectionId], references: [id])
+
+  @@unique([userId, sectionId])
+}
+
+model Assignment {
+  id               String    @id @default(cuid())
+  courseId         String
+  canvasId         String
+  name             String
+  description      String?
+  dueAt            DateTime?
+  pointsPossible   Float?
+  submissionType   String?
+  createdAt        DateTime  @default(now())
+
+  course      Course       @relation(fields: [courseId], references: [id])
+  studyGuides StudyGuide[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  sectionId String
+  userId    String
+  content   String
+  anonymous Boolean  @default(false)
+  reported  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  section Section @relation(fields: [sectionId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+model StudyGuide {
+  id           String   @id @default(cuid())
+  userId       String
+  assignmentId String
+  content      String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+}
+
+model DailyLimit {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  date      String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
