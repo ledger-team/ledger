@@ -1,65 +1,152 @@
-import Image from "next/image";
+import { getDashboardData, groupAssignmentsByWeek } from '@/lib/queries'
 
-export default function Home() {
+// Temporary hardcoded user — will be replaced when auth is built
+const DEV_USER_ID = 'cmpix1ayn0002pu98c3npnk4b'
+
+export const dynamic = 'force-dynamic'
+
+export default async function DashboardPage() {
+  const { user, courses, upcomingAssignments } = await getDashboardData(DEV_USER_ID)
+  const weeks = groupAssignmentsByWeek(upcomingAssignments)
+  const sortedWeeks = Array.from(weeks.entries()).sort(([a], [b]) =>
+    a.localeCompare(b)
+  )
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        {/* Header */}
+        <header className="mb-12 border-b border-zinc-800 pb-6">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">Ledger</h1>
+              <p className="mt-1 text-sm text-zinc-500">
+                {user.school.name}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-zinc-400">{user.name}</p>
+              <p className="text-xs text-zinc-600">
+                Last synced{' '}
+                {user.lastSyncedAt
+                  ? new Date(user.lastSyncedAt).toLocaleString()
+                  : 'never'}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* Courses overview */}
+        <section className="mb-12">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Your Courses
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {courses.map((course) => (
+              <div
+                key={course.id}
+                className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-zinc-700"
+              >
+                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  {course.courseCode}
+                </p>
+                <p className="mt-1 text-sm font-medium text-zinc-100">
+                  {course.name}
+                </p>
+                <p className="mt-3 text-2xl font-bold text-zinc-100">
+                  {course.currentGrade ??
+                    (course.currentScore !== null
+                      ? `${course.currentScore}%`
+                      : '—')}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Upcoming assignments by week */}
+        <section>
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Upcoming Assignments
+          </h2>
+
+          {sortedWeeks.length === 0 ? (
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+              No upcoming assignments in the next 30 days.
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {sortedWeeks.map(([weekStart, assignments]) => {
+                const weekDate = new Date(weekStart)
+                const weekLabel = weekDate.toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                })
+
+                return (
+                  <div key={weekStart}>
+                    <h3 className="mb-3 text-sm font-semibold text-zinc-400">
+                      Week of {weekLabel}
+                    </h3>
+                    <div className="space-y-2">
+                      {assignments.map((assignment) => {
+                        const due = assignment.dueAt
+                          ? new Date(assignment.dueAt)
+                          : null
+                        const dueLabel = due
+                          ? due.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : 'No due date'
+                        const timeLabel = due
+                          ? due.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })
+                          : ''
+
+                        return (
+                          <div
+                            key={assignment.id}
+                            className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-zinc-700"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-zinc-100">
+                                {assignment.name}
+                              </p>
+                              <p className="mt-1 text-xs text-zinc-500">
+                                {assignment.course.name}
+                              </p>
+                            </div>
+                            <div className="ml-4 text-right">
+                              <p className="text-sm text-zinc-300">
+                                {dueLabel}
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {timeLabel}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-16 border-t border-zinc-800 pt-6">
+          <p className="text-xs text-zinc-600">
+            Ledger · {courses.length} courses · {upcomingAssignments.length}{' '}
+            upcoming
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+        </footer>
+      </div>
+    </main>
+  )
 }
