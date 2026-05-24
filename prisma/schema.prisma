@@ -84,6 +84,7 @@ model Assignment {
   dueAt            DateTime?
   pointsPossible   Float?
   submissionType   String?
+  isTestData       Boolean   @default(false)
   createdAt        DateTime  @default(now())
 
   course      Course       @relation(fields: [courseId], references: [id])
